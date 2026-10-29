@@ -5,8 +5,9 @@ const ENDPOINT='https://overpass-api.de/api/interpreter';
 const cacheKey='ibps-osm-milano-center-v1';
 export function projectPoint(lon,lat){return [(lon-CENTER.lon)*111320*Math.cos(CENTER.lat*Math.PI/180)+73,-(lat-CENTER.lat)*111320];}
 export function convertOsmElements(elements){
- const buildings=[],roads=[];
+ const buildings=[],roads=[],shops=[];
  for(const e of elements||[]){
+  if((e.tags?.shop||['restaurant','cafe','bar','pharmacy'].includes(e.tags?.amenity))&&e.tags?.name){const p=e.lat!=null&&e.lon!=null?[e.lon,e.lat]:e.center?[e.center.lon,e.center.lat]:null;if(p)shops.push({id:e.id,name:e.tags.name,category:e.tags.shop||e.tags.amenity,position:projectPoint(...p),source:'OpenStreetMap'});}
   if(!Array.isArray(e.geometry)||e.geometry.length<2)continue;
   const points=e.geometry.map(p=>projectPoint(p.lon,p.lat));
   if(e.tags?.building&&points.length>=4){
@@ -20,7 +21,7 @@ export function convertOsmElements(elements){
    roads.push({id:e.id,points,kind:e.tags.highway});
   }
  }
- return {buildings,roads};
+ return {buildings,roads,shops};
 }
 export async function loadMilanOsm({signal}={}){
  try{const stored=sessionStorage.getItem(cacheKey);if(stored){const data=JSON.parse(stored);if(Date.now()-data.at<24*3600000)return data.value;}}catch{}
@@ -85,7 +86,7 @@ export async function loadMilanTile(tx,tz,{signal}={}){
  const key='ibps-osm-tile-v2-'+tx+'-'+tz;
  try{const value=sessionStorage.getItem(key);if(value){const parsed=JSON.parse(value);if(Date.now()-parsed.at<7*86400000)return parsed.data;}}catch{}
  const [a,b,c,d]=tileBounds(tx,tz);
- const q=`[out:json][timeout:20];(way[building](${a},${b},${c},${d});way[highway](${a},${b},${c},${d}););out geom;`;
+ const q=`[out:json][timeout:20];(way[building](${a},${b},${c},${d});way[highway](${a},${b},${c},${d});nwr[shop][name](${a},${b},${c},${d});nwr[amenity~\"^(restaurant|cafe|bar|pharmacy)$\"][name](${a},${b},${c},${d}););out center geom;`;
  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),20000);
  if(signal)signal.addEventListener('abort',()=>controller.abort(),{once:true});
  try{
