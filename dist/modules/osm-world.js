@@ -66,3 +66,33 @@ export function buildOsmMeshes(THREE,data,{maxBuildings=350,maxRoads=300}={}){
  }
  return group;
 }
+
+/** Historic Milan coverage: roughly the area within the Cerchia dei Navigli,
+ * with extra room for Brera, Castello, Sant'Ambrogio and Porta Venezia.
+ * Lazy loaded as small independent 450-metre square tiles.
+ */
+export const MILANO_CENTRO={minX:-1900,maxX:1900,minZ:-1900,maxZ:1900,tileSize:450};
+export function tileIdFor(x,z){return [Math.floor((x-73)/MILANO_CENTRO.tileSize),Math.floor(z/MILANO_CENTRO.tileSize)];}
+export function tileBounds(tx,tz){
+ const x0=tx*MILANO_CENTRO.tileSize+73,z0=tz*MILANO_CENTRO.tileSize;
+ const x1=x0+MILANO_CENTRO.tileSize,z1=z0+MILANO_CENTRO.tileSize;
+ const lon0=CENTER.lon+(x0-73)/(111320*Math.cos(CENTER.lat*Math.PI/180));
+ const lon1=CENTER.lon+(x1-73)/(111320*Math.cos(CENTER.lat*Math.PI/180));
+ const lat0=CENTER.lat-z1/111320,lat1=CENTER.lat-z0/111320;
+ return [lat0,lon0,lat1,lon1];
+}
+export async function loadMilanTile(tx,tz,{signal}={}){
+ const key='ibps-osm-tile-v2-'+tx+'-'+tz;
+ try{const value=sessionStorage.getItem(key);if(value){const parsed=JSON.parse(value);if(Date.now()-parsed.at<7*86400000)return parsed.data;}}catch{}
+ const [a,b,c,d]=tileBounds(tx,tz);
+ const q=`[out:json][timeout:20];(way[building](${a},${b},${c},${d});way[highway](${a},${b},${c},${d}););out geom;`;
+ const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),20000);
+ if(signal)signal.addEventListener('abort',()=>controller.abort(),{once:true});
+ try{
+  const response=await fetch(ENDPOINT,{method:'POST',body:new URLSearchParams({data:q}),signal:controller.signal});
+  if(!response.ok)throw Error('OSM tile HTTP '+response.status);
+  const json=await response.json();const data=convertOsmElements(json.elements);
+  try{sessionStorage.setItem(key,JSON.stringify({at:Date.now(),data}));}catch{}
+  return data;
+ }finally{clearTimeout(timer);}
+}
