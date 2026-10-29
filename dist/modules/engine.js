@@ -2,7 +2,7 @@ import * as THREE from '../vendor/three.module.js';
 import {SoftwareRenderer} from './software-renderer.js';
 import {PIAZZA,MILAN_URBAN_BLOCKS,normalizeUrbanFootprints} from './geography.js';
 import {milanHour} from './weather.js';
-import {buildOsmMeshes,loadMilanTile,tileIdFor,MILANO_CENTRO,makeProceduralTile} from './osm-world.js';
+import {buildOsmMeshes,loadMilanTile,tileIdFor,MILANO_CENTRO} from './osm-world.js';
 const clamp=THREE.MathUtils.clamp;
 export class PiazzaEngine {
  constructor(canvas,{onNear,onInteract,onEvent}={}){
@@ -13,7 +13,7 @@ export class PiazzaEngine {
  this.materials={};this.geometries={box:new THREE.BoxGeometry(1,1,1),sphere:new THREE.SphereGeometry(1,10,7),cyl:new THREE.CylinderGeometry(1,1,1,10),cone:new THREE.ConeGeometry(1,1,8)};
  this.static=new THREE.Group();this.scene.add(this.static);this.makeGround();this.makeDuomo();this.makeSurroundings();this.makeMonument();this.makeLamps();this.makeCityDetails();this.batchStatic();this.makeActors();this.makeStage();this.makeRain();this.makeClouds();
  this.player=this.person('#47685e',true);this.player.position.set(-46,0,16);this.player.rotation.y=-Math.PI/2;this.scene.add(this.player);
- this.hotspots=[{x:62,z:0,title:'Duomo di Milano',type:'duomo',radius:11},{x:0,z:-48,title:'Galleria Vittorio Emanuele II',type:'galleria',radius:11},{x:-34,z:45,title:'Caffè della Piazza · negozio demo',type:'cafe',radius:10},{x:23,z:45,title:'Atelier Milano · negozio demo',type:'atelier',radius:10},{x:-18,z:0,title:'Monumento a Vittorio Emanuele II',type:'monumento',radius:10}];
+ this.hotspots=[{x:62,z:0,title:'Duomo di Milano',type:'duomo',radius:11},{x:0,z:-48,title:'Galleria Vittorio Emanuele II',type:'galleria',radius:11},{x:-18,z:0,title:'Monumento a Vittorio Emanuele II',type:'monumento',radius:10}];
  this.hotspots.forEach(h=>{let ring=new THREE.Mesh(new THREE.RingGeometry(.8,1,24),new THREE.MeshBasicMaterial({color:'#c5ddaf',transparent:true,opacity:.75,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.set(h.x,.06,h.z);this.scene.add(ring);h.marker=ring;});
  this.loadGeographicCity();this.bind();this.resize();this.camera.position.set(-55,8,18);this.frame=this.frame.bind(this);requestAnimationFrame(this.frame);
  }
@@ -48,10 +48,7 @@ export class PiazzaEngine {
  this.box('#69736a',0,.06,35,14,.1,75,g);for(let side of [-1,1])this.box('#9d9b84',side*9,11,30,3,22,64,g);let roof=new THREE.Mesh(new THREE.CylinderGeometry(8,8,70,18,1,true,0,Math.PI),this.mat('#a0b1a3',{transparent:true,opacity:.36,side:THREE.DoubleSide}));roof.rotation.x=Math.PI/2;roof.position.set(0,22,30);g.add(roof);this.label('GALLERIA VITTORIO EMANUELE II',0,34,-51,31);
  // Arengario massing on the southeast side.
  for(let x of [47,68]){this.box('#c6b69b',x,19,58,15,38,23);for(let dx of [-4,0,4]){let a=this.arch(2.5,6,'#5d665b',this.static,x+dx,22,46);}}
- this.label('CAFFÈ DELLA PIAZZA',-34,6.2,51.7,18);this.label('ATELIER MILANO',23,6.2,51.7,14);
- for(let x of [-34,23]){this.box('#6a826d',x,5.3,51,10,.25,4);this.box('#bfb59e',x,2.5,51.9,7,5,.18);this.box('#52665c',x,2.5,51.6,6.3,4.3,.2);for(let dx of [-2,2])this.box('#d7c4a6',x+dx,2.5,51.2,.16,4.3,.2);}
- // Cafe furniture at the southern edge.
- for(let x of [-43,-35,-27]){this.mesh('cyl','#8a816b',[x,1.05,43],[1.1,.15,1.1]);this.mesh('cyl','#655f50',[x,.5,43],[.1,1,.1]);for(let dx of [-1.7,1.7]){this.box('#727965',x+dx,.55,43,.8,.14,.8);this.box('#727965',x+dx,1,43.35,.8,.9,.1);}}
+
  }
  async loadGeographicCity(){
   this.cityTiles=new Map();this.tileQueue=[];this.tilesInFlight=false;this.lastTileCheck=0;
@@ -70,7 +67,7 @@ export class PiazzaEngine {
   desired.sort((a,b)=>a[2]-b[2]);
   for(const [tx,tz] of desired){
    const key=tx+':'+tz;if(this.cityTiles.has(key))continue;
-   const placeholder=buildOsmMeshes(THREE,makeProceduralTile(tx,tz),{maxBuildings:80,maxRoads:30});this.scene.add(placeholder);this.cityTiles.set(key,{state:'queued',group:placeholder,approximate:true});this.tileQueue.push([tx,tz,key]);
+   this.cityTiles.set(key,{state:'queued',group:null,approximate:false});this.tileQueue.push([tx,tz,key]);
   }
   // Keep a bounded 3-by-3 neighborhood in memory.
   for(const [key,tile] of this.cityTiles){
@@ -97,7 +94,7 @@ export class PiazzaEngine {
     const oldTile=this.cityTiles.get(key);if(oldTile?.group){this.scene.remove(oldTile.group);const mats=new Set();oldTile.group.traverse(o=>{if(o.isMesh){o.geometry.dispose();mats.add(o.material);}});for(const mat of mats)mat.dispose();}this.scene.add(group);this.cityTiles.set(key,{state:'ready',group,approximate:false});
     console.info('[Bel Paese] Milano OSM',key,buildings.length,'edifici',roads.length,'strade');
    }
-  }catch(error){if(this.cityTiles.has(key))this.cityTiles.set(key,{...this.cityTiles.get(key),state:'fallback'});console.warn('[Bel Paese] Tile OSM',key,error.message);}
+  }catch(error){if(this.cityTiles.has(key))this.cityTiles.set(key,{...this.cityTiles.get(key),state:'unavailable'});console.warn('[Bel Paese] Tile OSM',key,error.message);}
   finally{this.tilesInFlight=false;if(this.tileQueue.length)setTimeout(()=>this.pumpCityTiles(),1000);}
  }
  makeCityDetails(){
