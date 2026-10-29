@@ -2,7 +2,7 @@ import * as THREE from '../vendor/three.module.js';
 import {SoftwareRenderer} from './software-renderer.js';
 import {PIAZZA,MILAN_URBAN_BLOCKS,normalizeUrbanFootprints} from './geography.js';
 import {milanHour} from './weather.js';
-import {buildOsmMeshes,loadMilanTile,tileIdFor,MILANO_CENTRO} from './osm-world.js';
+import {buildOsmMeshes,loadMilanTile,tileIdFor,MILANO_CENTRO,makeProceduralTile} from './osm-world.js';
 const clamp=THREE.MathUtils.clamp;
 export class PiazzaEngine {
  constructor(canvas,{onNear,onInteract,onEvent}={}){
@@ -70,7 +70,7 @@ export class PiazzaEngine {
   desired.sort((a,b)=>a[2]-b[2]);
   for(const [tx,tz] of desired){
    const key=tx+':'+tz;if(this.cityTiles.has(key))continue;
-   this.cityTiles.set(key,{state:'queued'});this.tileQueue.push([tx,tz,key]);
+   const placeholder=buildOsmMeshes(THREE,makeProceduralTile(tx,tz),{maxBuildings:80,maxRoads:30});this.scene.add(placeholder);this.cityTiles.set(key,{state:'queued',group:placeholder,approximate:true});this.tileQueue.push([tx,tz,key]);
   }
   // Keep a bounded 3-by-3 neighborhood in memory.
   for(const [key,tile] of this.cityTiles){
@@ -94,10 +94,10 @@ export class PiazzaEngine {
     const buildings=data.buildings.filter(b=>!b.points.some(p=>p[0]>-105&&p[0]<118&&p[1]>-83&&p[1]<85));
     const roads=data.roads.filter(r=>!r.points.every(p=>p[0]>-105&&p[0]<118&&p[1]>-83&&p[1]<85));
     const group=buildOsmMeshes(THREE,{buildings,roads},{maxBuildings:650,maxRoads:450});
-    this.scene.add(group);this.cityTiles.set(key,{state:'ready',group});
+    const oldTile=this.cityTiles.get(key);if(oldTile?.group){this.scene.remove(oldTile.group);const mats=new Set();oldTile.group.traverse(o=>{if(o.isMesh){o.geometry.dispose();mats.add(o.material);}});for(const mat of mats)mat.dispose();}this.scene.add(group);this.cityTiles.set(key,{state:'ready',group,approximate:false});
     console.info('[Bel Paese] Milano OSM',key,buildings.length,'edifici',roads.length,'strade');
    }
-  }catch(error){if(this.cityTiles.has(key))this.cityTiles.set(key,{state:'unavailable'});console.warn('[Bel Paese] Tile OSM',key,error.message);}
+  }catch(error){if(this.cityTiles.has(key))this.cityTiles.set(key,{...this.cityTiles.get(key),state:'fallback'});console.warn('[Bel Paese] Tile OSM',key,error.message);}
   finally{this.tilesInFlight=false;if(this.tileQueue.length)setTimeout(()=>this.pumpCityTiles(),1000);}
  }
  makeCityDetails(){
