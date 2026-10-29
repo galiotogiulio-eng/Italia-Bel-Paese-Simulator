@@ -1,0 +1,30 @@
+{
+  "project": "ITALIA VIVA",
+  "version": "0.1.0",
+  "source_commit": "6db8c8d3ef17b462e02b54f265a759fede9e432d",
+  "source_file_count": 19,
+  "export_date": "2026-10-29",
+  "published_site": "https://italia-viva-v01.indigocrane15.chatgpt.site",
+  "source_sha256": {
+    ".openai/hosting.json": "e3ade11e5ee2c9a21d439b49107642637f932d8e95065c0657fb04b5b3281323",
+    "README.md": "f3438bce82df58b8871374f40ed454f7c23667943116e7c47147fae6d031e0ae",
+    "dist/assets/ATTRIBUTION.md": "802d93714e7617e456097d3b7ad4ba2ee8962e1c86ad74a72f72aaab92e581c8",
+    "dist/assets/world.json": "04342cdc1e3016bcd7db1630de95684d67b79fe3c8c460321e87aef469502394",
+    "dist/index.html": "630289570912c4270b879b2d575d1d13d73155d537a31bbd8b916ece3a04a02e",
+    "dist/modules/app.js": "1031fbc6738fcd6407a9202edfdaabf2242f56c2b10d94800cf7b44c3209c0ee",
+    "dist/modules/data.js": "692fa2cd81eb50111319489615c737a4c1d2313cc24f30e67eefc3e6d84c07c1",
+    "dist/modules/economy.js": "62c34952ed161ea6335c4cc6805f19c0adeb5eef4bf20c1496a1cfa0bd4ef683",
+    "dist/modules/engine.js": "387334b4ea728cd07da72e7c1b08c16f18971b6dd263674912ba485535adeb02",
+    "dist/modules/events.js": "73564f6aac811cb5d5ec2387f1a7ad657040ab4a876c469558a60fc2ffda4012",
+    "dist/modules/geography.js": "2094897d7d67c572baeffde73fdcdda24e425e0193ecea026f202e1aba0ec4d3",
+    "dist/modules/software-renderer.js": "9e037574fdc848354cc7476d9b1106ecc62a7a01cc2c40c86207fbe22eae0787",
+    "dist/modules/transport.js": "dfb075a7ad39966611b98cc6f3075fc0c2044aade63ffac69fd7c3335f1caa26",
+    "dist/modules/weather.js": "53597355473dff0be4bb50b633d16b54f619fc93e954d66f16088780b1c8a7e4",
+    "dist/style.css": "767d3e97a469d9534a320ebc1a2d0c9952b1dd1cffba0c49a6a2df93b9e520e1",
+    "dist/vendor/THREE-LICENSE.txt": "4c40a1ef62450b857c3b2aaf294936304cd552d965fbcd9d32d4c5bcf4ba4454",
+    "dist/vendor/three.module.js": "ce1fa418de16a19495a9f72495580e3015d7745c296d3ce0485897f902ddedfb",
+    "package.json": "7d926dcbac81a9dcf3decbaab99c975531bd3a49778bdb13e3fb39062484883c",
+    "tests/core.test.mjs": "212e52166a7e7dbc423c412c5c33c703b9e1e5af0bd3f99c75396dacc2fa4cd7"
+  },
+  "note": "I file elencati in source_sha256 sono copie byte per byte del commit pubblicato. Le guide e il server locale sono aggiunte solo allo ZIP. Nessun deploy eseguito."
+}
