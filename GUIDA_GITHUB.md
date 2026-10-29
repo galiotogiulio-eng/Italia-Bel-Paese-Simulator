@@ -1,11 +1,11 @@
-# ITALIA VIVA V0.1 — sorgenti completi
+# ITALIA BEL PAESE SIMULATOR V0.1 — sorgenti completi
 
 Questo pacchetto conserva tutti i 19 file del commit pubblicato, oltre a questa guida, un avviatore locale e un inventario degli asset. Il sito attualmente online non viene modificato dall’esportazione.
 
 ## Conservare il progetto su GitHub
 
 1. Estrai lo ZIP sul computer.
-2. Crea un nuovo repository GitHub chiamato, per esempio, `italia-viva`. Scegli tu se privato o pubblico.
+2. Crea un nuovo repository GitHub chiamato, per esempio, `italia-bel-paese-simulator`. Scegli tu se privato o pubblico.
 3. Carica **il contenuto** della cartella estratta, mantenendo sottocartelle e nomi. Non caricare soltanto il file ZIP se vuoi modificare i singoli file dal repository.
 4. Includi anche `.openai/hosting.json` se vuoi conservare il riferimento al sito originale. Questo file contiene l’identificativo del sito e la directory statica, non credenziali.
 5. Conserva la cronologia delle modifiche con i commit. In questo ZIP non è inclusa la directory `.git` del repository Sites.
@@ -15,9 +15,9 @@ Alternativa da terminale, nella cartella estratta, dopo aver creato un repositor
 ```sh
 git init
 git add .
-git commit -m "Importa ITALIA VIVA V0.1"
+git commit -m "Importa ITALIA BEL PAESE SIMULATOR V0.1"
 git branch -M main
-git remote add origin https://github.com/TUO-UTENTE/italia-viva.git
+git remote add origin https://github.com/TUO-UTENTE/italia-bel-paese-simulator.git
 git push -u origin main
 ```
 
@@ -83,7 +83,7 @@ Puoi allegare questo ZIP, oppure fornire il repository quando gli strumenti dell
 
 Prompt da riutilizzare:
 
-> Questo è il progetto ITALIA VIVA V0.1. Leggi GUIDA_GITHUB.md, README.md ed EXPORT_METADATA.json. Modifica i sorgenti mantenendo la struttura modulare. Non modificare né pubblicare sul sito Sites esistente senza una mia richiesta esplicita. Le geometrie sono provvisorie; chat ed eventi demo devono restare chiaramente riconoscibili.
+> Questo è il progetto ITALIA BEL PAESE SIMULATOR V0.1. Leggi GUIDA_GITHUB.md, README.md ed EXPORT_METADATA.json. Modifica i sorgenti mantenendo la struttura modulare. Non modificare né pubblicare sul sito Sites esistente senza una mia richiesta esplicita. Le geometrie sono provvisorie; chat ed eventi demo devono restare chiaramente riconoscibili.
 
 ## Pubblicazione separata
 
