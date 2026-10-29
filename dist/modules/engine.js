@@ -76,7 +76,7 @@ export class PiazzaEngine {
   for(const [key,tile] of this.cityTiles){
    const [x,z]=key.split(':').map(Number);
    if(Math.abs(x-cx)>2||Math.abs(z-cz)>2){
-    if(tile.group){this.scene.remove(tile.group);tile.group.traverse(o=>{if(o.isMesh)o.geometry.dispose();});}
+    if(tile.group){this.scene.remove(tile.group);const mats=new Set();tile.group.traverse(o=>{if(o.isMesh){o.geometry.dispose();if(o.material)mats.add(o.material);}});for(const mat of mats)mat.dispose();}
     this.cityTiles.delete(key);
    }
   }
@@ -97,7 +97,7 @@ export class PiazzaEngine {
     this.scene.add(group);this.cityTiles.set(key,{state:'ready',group});
     console.info('[Bel Paese] Milano OSM',key,buildings.length,'edifici',roads.length,'strade');
    }
-  }catch(error){this.cityTiles.set(key,{state:'unavailable'});console.warn('[Bel Paese] Tile OSM',key,error.message);}
+  }catch(error){if(this.cityTiles.has(key))this.cityTiles.set(key,{state:'unavailable'});console.warn('[Bel Paese] Tile OSM',key,error.message);}
   finally{this.tilesInFlight=false;if(this.tileQueue.length)setTimeout(()=>this.pumpCityTiles(),1000);}
  }
  makeCityDetails(){
