@@ -1,8 +1,7 @@
 name: Import original game sources
 on:
   push:
-    paths:
-      - '.github/workflows/import-sources.yml'
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: write
