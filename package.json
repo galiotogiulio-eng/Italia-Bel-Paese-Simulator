@@ -1,1 +1,13 @@
-{"name":"italia-bel-paese-simulator","version":"0.1.0","private":true,"type":"module","scripts":{"check":"node --test tests/*.test.mjs"}}
+{
+  "name": "italia-bel-paese-simulator",
+  "version": "0.1.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --test tests/*.test.mjs",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
