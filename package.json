@@ -1,1 +1,1 @@
-{"name":"italia-viva","version":"0.1.0","private":true,"type":"module","scripts":{"check":"node --test tests/*.test.mjs"}}
+{"name":"italia-bel-paese-simulator","version":"0.1.0","private":true,"type":"module","scripts":{"check":"node --test tests/*.test.mjs"}}
