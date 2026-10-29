@@ -27,3 +27,28 @@ export function normalizeUrbanFootprints(input){
  return input.filter(b=>Number.isFinite(b.x)&&Number.isFinite(b.z)&&Number.isFinite(b.width)&&Number.isFinite(b.depth)&&b.width>0&&b.depth>0)
   .map((b,i)=>({id:String(b.id??'block-'+i),x:b.x,z:b.z,width:b.width,depth:b.depth,height:Math.max(4,Number(b.height)||15),rotation:Number(b.rotation)||0,kind:b.kind||'generic'}));
 }
+
+/** Convert building polygons from an OSM/GeoJSON FeatureCollection into local game blocks.
+ * Real polygons are simplified to oriented bounding rectangles for low-end devices.
+ * The output coordinates are metres relative to the chosen centre.
+ * Geometry coverage/detail depends entirely on the external geographic dataset.
+ */
+export function blocksFromGeoJSON(featureCollection,{lat=MILAN.lat,lon=MILAN.lon,maxBlocks=250}={}){
+ if(featureCollection?.type!=='FeatureCollection'||!Array.isArray(featureCollection.features))return [];
+ const east=111320*Math.cos(lat*Math.PI/180), north=111320;
+ const blocks=[];
+ for(const f of featureCollection.features){
+  if(blocks.length>=maxBlocks)break;
+  const polygon=f.geometry?.type==='Polygon'?f.geometry.coordinates?.[0]:f.geometry?.type==='MultiPolygon'?f.geometry.coordinates?.[0]?.[0]:null;
+  if(!Array.isArray(polygon)||polygon.length<4||!(f.properties?.building||f.properties?.['building:levels']))continue;
+  const coords=polygon.filter(p=>Array.isArray(p)&&Number.isFinite(p[0])&&Number.isFinite(p[1])).map(p=>[(p[0]-lon)*east,-(p[1]-lat)*north]);
+  if(coords.length<4)continue;
+  const xs=coords.map(p=>p[0]),zs=coords.map(p=>p[1]);
+  const minX=Math.min(...xs),maxX=Math.max(...xs),minZ=Math.min(...zs),maxZ=Math.max(...zs);
+  const width=maxX-minX,depth=maxZ-minZ;
+  if(width<2||depth<2||width>250||depth>250)continue;
+  const height=Number(f.properties.height)||Math.max(6,(Number(f.properties['building:levels'])||4)*3.1);
+  blocks.push({id:String(f.id||f.properties['@id']||'osm-'+blocks.length),x:(minX+maxX)/2,z:(minZ+maxZ)/2,width,depth,height,rotation:0,kind:'osm'});
+ }
+ return normalizeUrbanFootprints(blocks);
+}
