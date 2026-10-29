@@ -12,3 +12,12 @@ import {SoftwareRenderer} from '../dist/modules/software-renderer.js';
 test('CPU fallback renders perspective geometry without WebGL',()=>{let triangles=0;const context={createLinearGradient:()=>({addColorStop(){}}),fillRect(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},fill(){triangles++;},stroke(){}};const canvas={getContext:type=>{assert.equal(type,'2d');return context;}};const renderer=new SoftwareRenderer(canvas);renderer.setSize(640,480);const scene=new THREE.Scene();scene.background=new THREE.Color('#aabbcc');scene.fog=new THREE.Fog('#aabbcc',170,380);scene.add(new THREE.Mesh(new THREE.BoxGeometry(3,3,3),new THREE.MeshStandardMaterial({color:'#ccbbaa'})));const camera=new THREE.PerspectiveCamera(58,640/480,.2,450);camera.position.set(5,4,8);camera.lookAt(0,0,0);renderer.render(scene,camera);assert.ok(triangles>0);assert.ok(renderer.info.render.triangles>0);});
 
 test('Procedural urban footprint generator accepts local and OSM geometry safely',()=>{const blocks=normalizeUrbanFootprints(MILAN_URBAN_BLOCKS);assert.equal(blocks.length,4);const fc={type:'FeatureCollection',features:[{type:'Feature',id:17,properties:{building:'yes','building:levels':3},geometry:{type:'Polygon',coordinates:[[[9.19,45.4642],[9.1901,45.4642],[9.1901,45.4643],[9.19,45.4643],[9.19,45.4642]]]}}]};const imported=blocksFromGeoJSON(fc);assert.equal(imported.length,1);assert.ok(imported[0].width>2);assert.ok(imported[0].height>8);assert.deepEqual(blocksFromGeoJSON({}),[]);});
+
+import {projectPoint,convertOsmElements,buildOsmMeshes} from '../dist/modules/osm-world.js';
+test('OSM importer projects true geographic coordinates and renders polygon extrusion',()=>{
+ const center=projectPoint(9.19,45.4642);assert.ok(Math.abs(center[0]-73)<.01);assert.ok(Math.abs(center[1])<.01);
+ const features=convertOsmElements([{type:'way',id:20,tags:{building:'yes','building:levels':'5'},geometry:[{lon:9.19,lat:45.4642},{lon:9.1901,lat:45.4642},{lon:9.1901,lat:45.4643},{lon:9.19,lat:45.4643},{lon:9.19,lat:45.4642}]},{type:'way',id:21,tags:{highway:'residential'},geometry:[{lon:9.19,lat:45.4642},{lon:9.191,lat:45.4642}]}]);
+ assert.equal(features.buildings.length,1);assert.equal(features.roads.length,1);assert.ok(features.buildings[0].height>14);
+ const group=buildOsmMeshes(THREE,features);assert.equal(group.children.length,2);
+ for(const mesh of group.children)mesh.geometry.dispose();
+});
