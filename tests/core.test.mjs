@@ -21,3 +21,13 @@ test('OSM importer projects true geographic coordinates and renders polygon extr
  const group=buildOsmMeshes(THREE,features);assert.equal(group.children.length,2);
  for(const mesh of group.children)mesh.geometry.dispose();
 });
+
+import {tileIdFor,tileBounds,MILANO_CENTRO} from '../dist/modules/osm-world.js';
+test('Historic Milan map tiles divide large coverage into stable meter-scale cells',()=>{
+ assert.deepEqual(tileIdFor(73,0),[0,0]);
+ assert.deepEqual(tileIdFor(523,450),[1,1]);
+ const [south,west,north,east]=tileBounds(0,0);
+ assert.ok(south<45.4642&&north>=45.4642);
+ assert.ok(west<=9.19&&east>9.19);
+ assert.equal(MILANO_CENTRO.tileSize,450);
+});
