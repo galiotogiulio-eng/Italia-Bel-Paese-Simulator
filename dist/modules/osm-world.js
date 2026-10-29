@@ -85,9 +85,9 @@ export function tileBounds(tx,tz,city='milano'){const centre=CITY_CENTRES[city]|
 }
 export async function loadMilanTile(tx,tz,{signal,city='milano'}={}){
  const key='ibps-osm-tile-v4-'+city+'-'+tx+'-'+tz;
- try{const value=sessionStorage.getItem(key);if(value){const parsed=JSON.parse(value);if(Date.now()-parsed.at<7*86400000)return parsed.data;}}catch{}
  const local=await fetch('assets/cities/'+city+'/tiles/'+tx+'_'+tz+'.json',{signal}).catch(()=>null);
  if(local?.ok){const data=await local.json();return {buildings:data.buildings||[],roads:data.roads||[],shops:data.shops||[]};}
+ try{const value=sessionStorage.getItem(key);if(value){const parsed=JSON.parse(value);if(Date.now()-parsed.at<7*86400000)return parsed.data;}}catch{}
  const [a,b,c,d]=tileBounds(tx,tz,city);
  const q=`[out:json][timeout:20];(way[building](${a},${b},${c},${d});way[highway](${a},${b},${c},${d});nwr[shop][name](${a},${b},${c},${d});nwr[amenity~\"^(restaurant|cafe|bar|pharmacy)$\"][name](${a},${b},${c},${d}););out center geom;`;
  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),20000);
