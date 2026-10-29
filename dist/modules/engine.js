@@ -55,7 +55,7 @@ export class PiazzaEngine {
   this.refreshCityTiles();
  }
  refreshCityTiles(){
-  if(!this.cityTiles)return;
+  if(this.disposed||!this.cityTiles)return;
   const [cx,cz]=tileIdFor(this.player.position.x,this.player.position.z);
   const desired=[];
   for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
@@ -86,7 +86,7 @@ export class PiazzaEngine {
   this.tilesInFlight=true;
   try{
    const data=await loadMilanTile(tx,tz,{city:this.city});
-   if(this.cityTiles.has(key)){
+   if(!this.disposed&&this.cityTiles.has(key)){
     // Keep hand-built central Piazza and landmark demos while real geography grows around it.
     const buildings=this.city==='milano'?data.buildings.filter(b=>!b.points.some(p=>p[0]>-105&&p[0]<118&&p[1]>-83&&p[1]<85)):data.buildings;
     const roads=this.city==='milano'?data.roads.filter(r=>!r.points.every(p=>p[0]>-105&&p[0]<118&&p[1]>-83&&p[1]<85)):data.roads;
@@ -141,7 +141,8 @@ export class PiazzaEngine {
  this.hotspots.forEach(h=>h.marker.material.opacity=.45+Math.sin(t*2)*.2);
  }
  setEvent(state){this.stage.visible=state.phase!=='idle';this.crowd.forEach(p=>p.visible=state.phase==='live');this.stageLights.forEach((l,i)=>{l.intensity=state.phase==='live'?25+Math.sin(this.elapsed*2+i)*10:0;});}
- frame(){requestAnimationFrame(this.frame);const dt=Math.min(this.clock.getDelta(),.15);if(!this.active)return;if(this.renderer.isSoftware){this.softwareDelta=(this.softwareDelta||0)+dt;if(this.softwareDelta<1/24)return;this.update(Math.min(this.softwareDelta,.1));this.softwareDelta=0;}else this.update(dt);this.frameCount++;this.renderer.render(this.scene,this.camera);}
+ frame(){if(this.disposed)return;requestAnimationFrame(this.frame);const dt=Math.min(this.clock.getDelta(),.15);if(!this.active)return;if(this.renderer.isSoftware){this.softwareDelta=(this.softwareDelta||0)+dt;if(this.softwareDelta<1/24)return;this.update(Math.min(this.softwareDelta,.1));this.softwareDelta=0;}else this.update(dt);this.frameCount++;this.renderer.render(this.scene,this.camera);}
  start(){this.active=true;this.clock.getDelta();this.resize();}
  pause(){this.active=false;this.keys={};this.drag=null;}
+ dispose(){this.pause();this.disposed=true;this.abort?.abort();this.renderer.dispose?.();if(this.cityTiles)for(const tile of this.cityTiles.values())if(tile.group)tile.group.traverse(o=>{if(o.isMesh)o.geometry.dispose();});}
 }
