@@ -1,0 +1,38 @@
+name: Verify Milano and Palermo release
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-cities.yml'
+      - 'dist/modules/**'
+      - 'dist/assets/cities/**'
+      - 'tools/build-city-tiles.py'
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse JavaScript modules
+        run: |
+          node --check dist/modules/app.js
+          node --check dist/modules/engine.js
+          node --check dist/modules/osm-world.js
+      - name: Verify the 32 real city tiles
+        run: |
+          node --input-type=module -e '
+          import fs from "node:fs";
+          for (const city of ["milano","palermo"]) {
+            let buildings=0,roads=0;
+            for(let tz=-2;tz<2;tz++)for(let tx=-2;tx<2;tx++){
+              const p="dist/assets/cities/"+city+"/tiles/"+tx+"_"+tz+".json";
+              const d=JSON.parse(fs.readFileSync(p,"utf8"));
+              if(d.city!==city||!Array.isArray(d.buildings)||!Array.isArray(d.roads))throw Error("Invalid "+p);
+              buildings+=d.buildings.length;roads+=d.roads.length;
+            }
+            console.log(city,buildings,"buildings",roads,"roads");
+            if(buildings<100||roads<50)throw Error("Insufficient coverage "+city);
+          }'
