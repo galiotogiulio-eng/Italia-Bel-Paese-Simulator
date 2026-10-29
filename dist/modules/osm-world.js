@@ -1,15 +1,16 @@
 import * as THREE from '../vendor/three.module.js';
 import {MILAN} from './geography.js';
-const CENTER={lat:MILAN.lat,lon:MILAN.lon};
+export const CITY_CENTRES={milano:{name:'Milano',lat:MILAN.lat,lon:MILAN.lon},palermo:{name:'Palermo',lat:38.1157,lon:13.3615}};
+const CENTER=CITY_CENTRES.milano;
 const ENDPOINT='https://overpass-api.de/api/interpreter';
 const cacheKey='ibps-osm-milano-center-v1';
-export function projectPoint(lon,lat){return [(lon-CENTER.lon)*111320*Math.cos(CENTER.lat*Math.PI/180)+73,-(lat-CENTER.lat)*111320];}
-export function convertOsmElements(elements){
+export function projectPoint(lon,lat,city='milano'){const c=CITY_CENTRES[city]||CENTER;return [(lon-c.lon)*111320*Math.cos(c.lat*Math.PI/180)+73,-(lat-c.lat)*111320];}
+export function convertOsmElements(elements,city='milano'){
  const buildings=[],roads=[],shops=[];
  for(const e of elements||[]){
-  if((e.tags?.shop||['restaurant','cafe','bar','pharmacy'].includes(e.tags?.amenity))&&e.tags?.name){const p=e.lat!=null&&e.lon!=null?[e.lon,e.lat]:e.center?[e.center.lon,e.center.lat]:null;if(p)shops.push({id:e.id,name:e.tags.name,category:e.tags.shop||e.tags.amenity,position:projectPoint(...p),source:'OpenStreetMap'});}
+  if((e.tags?.shop||['restaurant','cafe','bar','pharmacy'].includes(e.tags?.amenity))&&e.tags?.name){const p=e.lat!=null&&e.lon!=null?[e.lon,e.lat]:e.center?[e.center.lon,e.center.lat]:null;if(p)shops.push({id:e.id,name:e.tags.name,category:e.tags.shop||e.tags.amenity,position:projectPoint(...p,city),source:'OpenStreetMap'});}
   if(!Array.isArray(e.geometry)||e.geometry.length<2)continue;
-  const points=e.geometry.map(p=>projectPoint(p.lon,p.lat));
+  const points=e.geometry.map(p=>projectPoint(p.lon,p.lat,city));
   if(e.tags?.building&&points.length>=4){
    const levels=parseFloat(e.tags['building:levels']);
    const measured=parseFloat(e.tags.height);
@@ -74,18 +75,18 @@ export function buildOsmMeshes(THREE,data,{maxBuildings=350,maxRoads=300}={}){
  */
 export const MILANO_CENTRO={minX:-1900,maxX:1900,minZ:-1900,maxZ:1900,tileSize:450};
 export function tileIdFor(x,z){return [Math.floor((x-73)/MILANO_CENTRO.tileSize),Math.floor(z/MILANO_CENTRO.tileSize)];}
-export function tileBounds(tx,tz){
+export function tileBounds(tx,tz,city='milano'){const centre=CITY_CENTRES[city]||CENTER;
  const x0=tx*MILANO_CENTRO.tileSize+73,z0=tz*MILANO_CENTRO.tileSize;
  const x1=x0+MILANO_CENTRO.tileSize,z1=z0+MILANO_CENTRO.tileSize;
- const lon0=CENTER.lon+(x0-73)/(111320*Math.cos(CENTER.lat*Math.PI/180));
- const lon1=CENTER.lon+(x1-73)/(111320*Math.cos(CENTER.lat*Math.PI/180));
- const lat0=CENTER.lat-z1/111320,lat1=CENTER.lat-z0/111320;
+ const lon0=centre.lon+(x0-73)/(111320*Math.cos(centre.lat*Math.PI/180));
+ const lon1=centre.lon+(x1-73)/(111320*Math.cos(centre.lat*Math.PI/180));
+ const lat0=centre.lat-z1/111320,lat1=centre.lat-z0/111320;
  return [lat0,lon0,lat1,lon1];
 }
-export async function loadMilanTile(tx,tz,{signal}={}){
- const key='ibps-osm-tile-v2-'+tx+'-'+tz;
+export async function loadMilanTile(tx,tz,{signal,city='milano'}={}){
+ const key='ibps-osm-tile-v4-'+city+'-'+tx+'-'+tz;
  try{const value=sessionStorage.getItem(key);if(value){const parsed=JSON.parse(value);if(Date.now()-parsed.at<7*86400000)return parsed.data;}}catch{}
- const [a,b,c,d]=tileBounds(tx,tz);
+ const [a,b,c,d]=tileBounds(tx,tz,city);
  const q=`[out:json][timeout:20];(way[building](${a},${b},${c},${d});way[highway](${a},${b},${c},${d});nwr[shop][name](${a},${b},${c},${d});nwr[amenity~\"^(restaurant|cafe|bar|pharmacy)$\"][name](${a},${b},${c},${d}););out center geom;`;
  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),20000);
  if(signal)signal.addEventListener('abort',()=>controller.abort(),{once:true});
