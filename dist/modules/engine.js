@@ -2,13 +2,13 @@ import * as THREE from '../vendor/three.module.js';
 import {SoftwareRenderer} from './software-renderer.js';
 import {PIAZZA,MILAN_URBAN_BLOCKS,normalizeUrbanFootprints} from './geography.js';
 import {milanHour} from './weather.js';
-import {loadMilanOsm,buildOsmMeshes} from './osm-world.js';
+import {buildOsmMeshes,loadMilanTile,tileIdFor,MILANO_CENTRO} from './osm-world.js';
 const clamp=THREE.MathUtils.clamp;
 export class PiazzaEngine {
  constructor(canvas,{onNear,onInteract,onEvent}={}){
  this.canvas=canvas;this.onNear=onNear;this.onInteract=onInteract;this.onEvent=onEvent;this.keys={};this.active=false;this.cameraTurn=0;this.moveHeading=0;this.yaw=Math.PI/2;this.pitch=.04;this.distance=11;this.manualWeather='auto';this.weather={mode:'sun'};this.clock=new THREE.Clock();this.npcs=[];this.birds=[];this.colliders=[];this.hotspots=[];this.frameCount=0;this.elapsed=0;
  try{this.renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});}catch(error){this.renderer=new SoftwareRenderer(canvas);this.softwareFallback=true;}this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));this.renderer.shadowMap.enabled=!this.softwareFallback;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.25;
- this.scene=new THREE.Scene();this.camera=new THREE.PerspectiveCamera(58,1,.2,450);this.scene.background=new THREE.Color('#a9c7ce');this.scene.fog=new THREE.Fog('#a9c7ce',170,380);
+ this.scene=new THREE.Scene();this.camera=new THREE.PerspectiveCamera(58,1,.2,900);this.scene.background=new THREE.Color('#a9c7ce');this.scene.fog=new THREE.Fog('#a9c7ce',170,380);
  this.hemisphere=new THREE.HemisphereLight('#d8e8ef','#8b8872',2.2);this.scene.add(this.hemisphere);this.sun=new THREE.DirectionalLight('#ffe4be',3.1);this.sun.position.set(-70,100,70);this.sun.castShadow=true;this.sun.shadow.mapSize.set(2048,2048);Object.assign(this.sun.shadow.camera,{left:-110,right:110,top:100,bottom:-100,near:1,far:300});this.sun.shadow.bias=-.001;this.scene.add(this.sun);
  this.materials={};this.geometries={box:new THREE.BoxGeometry(1,1,1),sphere:new THREE.SphereGeometry(1,10,7),cyl:new THREE.CylinderGeometry(1,1,1,10),cone:new THREE.ConeGeometry(1,1,8)};
  this.static=new THREE.Group();this.scene.add(this.static);this.makeGround();this.makeDuomo();this.makeSurroundings();this.makeMonument();this.makeLamps();this.makeCityDetails();this.batchStatic();this.makeActors();this.makeStage();this.makeRain();this.makeClouds();
@@ -22,7 +22,7 @@ export class PiazzaEngine {
  box(color,x,y,z,w,h,d,parent=this.static){return this.mesh('box',color,[x,y,z],[w,h,d],parent);}
  triangle(w,h,d,color,parent,x,y,z){let s=new THREE.Shape();s.moveTo(-w/2,0);s.lineTo(0,h);s.lineTo(w/2,0);s.closePath();let m=new THREE.Mesh(new THREE.ExtrudeGeometry(s,{depth:d,bevelEnabled:false}),this.mat(color));m.position.set(x,y,z);parent.add(m);return m;}
  arch(w,h,color,parent,x,y,z,depth=.15){let s=new THREE.Shape();s.moveTo(-w/2,0);s.lineTo(-w/2,h*.64);s.quadraticCurveTo(-w/2,h*.83,0,h);s.quadraticCurveTo(w/2,h*.83,w/2,h*.64);s.lineTo(w/2,0);s.closePath();let m=new THREE.Mesh(new THREE.ExtrudeGeometry(s,{depth,bevelEnabled:false}),this.mat(color));m.position.set(x,y,z);parent.add(m);return m;}
- makeGround(){const c=document.createElement('canvas');c.width=c.height=512;const ctx=c.getContext('2d');ctx.fillStyle='#b5aca0';ctx.fillRect(0,0,512,512);let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};for(let y=0;y<512;y+=32)for(let x=0;x<512;x+=64){const light=Math.floor(150+rnd()*30);ctx.fillStyle=`rgb(${light+12},${light+8},${light})`;ctx.fillRect(x+(y%64?32:0),y,63,31);}for(let i=0;i<22000;i++){let v=rnd()>.5?255:0;ctx.fillStyle=`rgba(${v},${v},${v},.045)`;ctx.fillRect(rnd()*512,rnd()*512,1,1);}const tex=new THREE.CanvasTexture(c);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(25,20);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=4;const ground=new THREE.Mesh(new THREE.PlaneGeometry(650,650,24,24),new THREE.MeshStandardMaterial({map:tex,roughness:.94}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;this.static.add(ground);
+ makeGround(){const c=document.createElement('canvas');c.width=c.height=512;const ctx=c.getContext('2d');ctx.fillStyle='#b5aca0';ctx.fillRect(0,0,512,512);let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};for(let y=0;y<512;y+=32)for(let x=0;x<512;x+=64){const light=Math.floor(150+rnd()*30);ctx.fillStyle=`rgb(${light+12},${light+8},${light})`;ctx.fillRect(x+(y%64?32:0),y,63,31);}for(let i=0;i<22000;i++){let v=rnd()>.5?255:0;ctx.fillStyle=`rgba(${v},${v},${v},.045)`;ctx.fillRect(rnd()*512,rnd()*512,1,1);}const tex=new THREE.CanvasTexture(c);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(25,20);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=4;const ground=new THREE.Mesh(new THREE.PlaneGeometry(4100,4100,16,16),new THREE.MeshStandardMaterial({map:tex,roughness:.94}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;this.static.add(ground);
  for(let x=-72;x<=62;x+=14){this.box('#8d887d',x,.018,0,.075,.02,102);for(let z=-44;z<=44;z+=14){this.box('#c9c0b2',x+7,.022,z,13.7,.02,.075);}}
  for(let z of [-49,49]){this.box('#7d7e72',-7,.03,z,143,.06,1);this.box('#d4c9b5',-7,.06,z+Math.sign(z),143,.12,1.2);}
  this.box('#a39e91',67,.17,0,7,.35,62);this.box('#c6bbae',69,.4,0,5,.4,59);this.box('#d1c7b8',71,.64,0,3,.3,57);
@@ -54,16 +54,51 @@ export class PiazzaEngine {
  for(let x of [-43,-35,-27]){this.mesh('cyl','#8a816b',[x,1.05,43],[1.1,.15,1.1]);this.mesh('cyl','#655f50',[x,.5,43],[.1,1,.1]);for(let dx of [-1.7,1.7]){this.box('#727965',x+dx,.55,43,.8,.14,.8);this.box('#727965',x+dx,1,43.35,.8,.9,.1);}}
  }
  async loadGeographicCity(){
+  this.cityTiles=new Map();this.tileQueue=[];this.tilesInFlight=false;this.lastTileCheck=0;
+  this.refreshCityTiles();
+ }
+ refreshCityTiles(){
+  if(!this.cityTiles)return;
+  const [cx,cz]=tileIdFor(this.player.position.x,this.player.position.z);
+  const desired=[];
+  for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
+   const tx=cx+dx,tz=cz+dz;
+   const centerX=(tx+.5)*MILANO_CENTRO.tileSize+73,centerZ=(tz+.5)*MILANO_CENTRO.tileSize;
+   if(Math.abs(centerX)>1850||Math.abs(centerZ)>1850)continue;
+   desired.push([tx,tz,dx*dx+dz*dz]);
+  }
+  desired.sort((a,b)=>a[2]-b[2]);
+  for(const [tx,tz] of desired){
+   const key=tx+':'+tz;if(this.cityTiles.has(key))continue;
+   this.cityTiles.set(key,{state:'queued'});this.tileQueue.push([tx,tz,key]);
+  }
+  // Keep a bounded 3-by-3 neighborhood in memory.
+  for(const [key,tile] of this.cityTiles){
+   const [x,z]=key.split(':').map(Number);
+   if(Math.abs(x-cx)>2||Math.abs(z-cz)>2){
+    if(tile.group){this.scene.remove(tile.group);tile.group.traverse(o=>{if(o.isMesh)o.geometry.dispose();});}
+    this.cityTiles.delete(key);
+   }
+  }
+  this.pumpCityTiles();
+ }
+ async pumpCityTiles(){
+  if(this.tilesInFlight||!this.tileQueue?.length)return;
+  const [tx,tz,key]=this.tileQueue.shift();
+  if(!this.cityTiles.has(key)){this.pumpCityTiles();return;}
+  this.tilesInFlight=true;
   try{
-   const data=await loadMilanOsm({signal:this.abort?.signal});
-   if(!data?.buildings?.length)return;
-   // Keep the prototype landmarks and inner Piazza scene; add real geography around it.
-   const buildings=data.buildings.filter(b=>{const pts=b.points;const x=pts.reduce((n,p)=>n+p[0],0)/pts.length,z=pts.reduce((n,p)=>n+p[1],0)/pts.length;return x<-105||x>118||z<-83||z>85;});
-   const roads=data.roads.filter(r=>r.points.some(p=>p[0]<-105||p[0]>118||p[1]<-83||p[1]>85));
-   this.osmCity=buildOsmMeshes(THREE,{buildings,roads});this.scene.add(this.osmCity);
-   this.geographyStatus={source:'OpenStreetMap',buildings:buildings.length,roads:roads.length};
-   console.info('[Bel Paese Simulator] Quartieri OSM caricati',this.geographyStatus);
-  }catch(e){console.warn('[Bel Paese Simulator] Geografia OSM non disponibile: resta la scena demo',e.message);}
+   const data=await loadMilanTile(tx,tz);
+   if(this.cityTiles.has(key)){
+    // Keep hand-built central Piazza and landmark demos while real geography grows around it.
+    const buildings=data.buildings.filter(b=>!b.points.some(p=>p[0]>-105&&p[0]<118&&p[1]>-83&&p[1]<85));
+    const roads=data.roads.filter(r=>!r.points.every(p=>p[0]>-105&&p[0]<118&&p[1]>-83&&p[1]<85));
+    const group=buildOsmMeshes(THREE,{buildings,roads},{maxBuildings:650,maxRoads:450});
+    this.scene.add(group);this.cityTiles.set(key,{state:'ready',group});
+    console.info('[Bel Paese] Milano OSM',key,buildings.length,'edifici',roads.length,'strade');
+   }
+  }catch(error){this.cityTiles.set(key,{state:'unavailable'});console.warn('[Bel Paese] Tile OSM',key,error.message);}
+  finally{this.tilesInFlight=false;if(this.tileQueue.length)setTimeout(()=>this.pumpCityTiles(),1000);}
  }
  makeCityDetails(){
  // Repeatable, low-cost urban furnishing: no external textures or network requests.
@@ -97,9 +132,9 @@ export class PiazzaEngine {
  resize(){let r=this.canvas.parentElement.getBoundingClientRect();if(!r.width||!r.height)return;this.renderer.setSize(r.width,r.height,false);this.camera.aspect=r.width/r.height;this.camera.updateProjectionMatrix();}
  setWeather(mode,data){this.manualWeather=mode;this.weather=data||this.weather;this.currentMode=null;}
  applyAtmosphere(){let h=milanHour(),mode=this.manualWeather==='auto'?this.weather.mode:this.manualWeather;const night=mode==='night'||(this.manualWeather==='auto'&&(h<7||h>=19));const key=mode+night;if(this.currentMode===key)return;this.currentMode=key;const fog=mode==='fog',rain=mode==='rain',cloud=mode==='cloud';const bg=night?'#172a3c':fog?'#b8bfbc':rain?'#748b91':cloud?'#a0b7c0':'#bfd7df';this.scene.background.set(bg);this.scene.fog.color.set(bg);this.scene.fog.near=fog?18:rain?80:170;this.scene.fog.far=fog?110:rain?220:380;this.renderer.toneMappingExposure=night?.87:rain?1.05:cloud?1.15:1.25;this.hemisphere.intensity=night?.65:rain?1.3:2.2;this.sun.intensity=night?.2:rain?.6:cloud?1.3:3.1;this.sun.color.set(night?'#8da5df':rain?'#e8edee':cloud?'#f5e9d7':'#ffe0b6');this.sun.position.set(-70,night?35:clamp(Math.sin((h-6)/12*Math.PI)*110,25,110),70);this.rain.visible=rain;this.clouds.visible=cloud||rain;}
- validPosition(x,z){if(x<-240||x>240||z<-240||z>240)return false;return !this.colliders.some(c=>Math.abs(x-c.x)<c.w/2+.5&&Math.abs(z-c.z)<c.d/2+.5);}
+ validPosition(x,z){if(x<MILANO_CENTRO.minX||x>MILANO_CENTRO.maxX||z<MILANO_CENTRO.minZ||z>MILANO_CENTRO.maxZ)return false;return !this.colliders.some(c=>Math.abs(x-c.x)<c.w/2+.5&&Math.abs(z-c.z)<c.d/2+.5);}
  animatePerson(p,t,speed){p.legs.forEach((l,i)=>l.rotation.x=Math.sin(t*7+i*Math.PI)*.5*speed);p.arms.forEach((l,i)=>l.rotation.x=-Math.sin(t*7+i*Math.PI)*.35*speed);}
- update(dt){this.elapsed+=dt;const t=this.elapsed;this.applyAtmosphere();let forward=(this.keys.w||this.keys.arrowup?1:0)-(this.keys.s||this.keys.arrowdown?1:0),side=(this.keys.d||this.keys.arrowright?1:0)-(this.keys.a||this.keys.arrowleft?1:0);const turn=(this.keys.l?1:0)-(this.keys.j?1:0);if(turn)this.yaw-=turn*dt*1.9;const moving=!!(forward||side);if(moving){const v=new THREE.Vector3(Math.sin(this.yaw)*forward-Math.cos(this.yaw)*side,0,Math.cos(this.yaw)*forward+Math.sin(this.yaw)*side).normalize();let speed=this.keys.shift?10:5.5;const nx=this.player.position.x+v.x*speed*dt,nz=this.player.position.z+v.z*speed*dt;if(this.validPosition(nx,this.player.position.z))this.player.position.x=nx;if(this.validPosition(this.player.position.x,nz))this.player.position.z=nz;const desiredHeading=Math.atan2(-v.x,-v.z);let delta=Math.atan2(Math.sin(desiredHeading-this.player.rotation.y),Math.cos(desiredHeading-this.player.rotation.y));this.player.rotation.y+=delta*(1-Math.exp(-dt*15));}
+ update(dt){this.elapsed+=dt;const t=this.elapsed;this.applyAtmosphere();if(t-this.lastTileCheck>1.5){this.lastTileCheck=t;this.refreshCityTiles();}let forward=(this.keys.w||this.keys.arrowup?1:0)-(this.keys.s||this.keys.arrowdown?1:0),side=(this.keys.d||this.keys.arrowright?1:0)-(this.keys.a||this.keys.arrowleft?1:0);const turn=(this.keys.l?1:0)-(this.keys.j?1:0);if(turn)this.yaw-=turn*dt*1.9;const moving=!!(forward||side);if(moving){const v=new THREE.Vector3(Math.sin(this.yaw)*forward-Math.cos(this.yaw)*side,0,Math.cos(this.yaw)*forward+Math.sin(this.yaw)*side).normalize();let speed=this.keys.shift?10:5.5;const nx=this.player.position.x+v.x*speed*dt,nz=this.player.position.z+v.z*speed*dt;if(this.validPosition(nx,this.player.position.z))this.player.position.x=nx;if(this.validPosition(this.player.position.x,nz))this.player.position.z=nz;const desiredHeading=Math.atan2(-v.x,-v.z);let delta=Math.atan2(Math.sin(desiredHeading-this.player.rotation.y),Math.cos(desiredHeading-this.player.rotation.y));this.player.rotation.y+=delta*(1-Math.exp(-dt*15));}
  this.animatePerson(this.player,t,moving?1:0);let target=this.player.position.clone().add(new THREE.Vector3(0,1.6,0));let desired=target.clone().add(new THREE.Vector3(-Math.sin(this.yaw)*this.distance,1.0+Math.sin(this.pitch)*this.distance,-Math.cos(this.yaw)*this.distance));this.camera.position.lerp(desired,1-Math.exp(-dt*8));this.camera.lookAt(target);
  for(let p of this.npcs){const d=p.userData;let x=d.baseX+Math.sin(t*d.speed*.15+d.phase)*7,z=d.baseZ+Math.cos(t*d.speed*.15+d.phase)*5;if(this.validPosition(x,z)){p.position.set(x,0,z);p.rotation.y=Math.atan2(-Math.cos(t*d.speed*.15+d.phase),Math.sin(t*d.speed*.15+d.phase));}this.animatePerson(p,t+d.phase,.7);}
  for(let b of this.birds){let d=b.userData;const dx=d.x-this.player.position.x,dz=d.z-this.player.position.z;const alarm=Math.hypot(dx,dz)<6;d.fly=clamp((d.fly||0)+(alarm?dt*2:-dt*.4),0,1);b.position.set(d.x+Math.sin(t*.4+d.phase)*1.4,d.fly*(2+Math.sin(t*2+d.phase)*.5),d.z+Math.cos(t*.35+d.phase)*1.2);b.rotation.y=d.phase+Math.sin(t*.2)*.5;b.rotation.x=Math.sin(t*8+d.phase)*.08*(1-d.fly);b.wings.forEach((w,i)=>w.rotation.z=Math.sin(t*18+d.phase)*d.fly*(i?1:-1));}
