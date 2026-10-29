@@ -1,3 +1,4 @@
+import {loadDuomoModel} from './duomo-model.js';
 import * as THREE from '../vendor/three.module.js';
 import {SoftwareRenderer} from './software-renderer.js';
 import {PIAZZA,MILAN_URBAN_BLOCKS,normalizeUrbanFootprints} from './geography.js';
@@ -11,7 +12,7 @@ export class PiazzaEngine {
  this.scene=new THREE.Scene();this.camera=new THREE.PerspectiveCamera(58,1,.2,900);this.scene.background=new THREE.Color('#a9c7ce');this.scene.fog=new THREE.Fog('#a9c7ce',170,380);
  this.hemisphere=new THREE.HemisphereLight('#d8e8ef','#8b8872',2.2);this.scene.add(this.hemisphere);this.sun=new THREE.DirectionalLight('#ffe4be',3.1);this.sun.position.set(-70,100,70);this.sun.castShadow=true;this.sun.shadow.mapSize.set(2048,2048);Object.assign(this.sun.shadow.camera,{left:-110,right:110,top:100,bottom:-100,near:1,far:300});this.sun.shadow.bias=-.001;this.scene.add(this.sun);
  this.materials={};this.geometries={box:new THREE.BoxGeometry(1,1,1),sphere:new THREE.SphereGeometry(1,10,7),cyl:new THREE.CylinderGeometry(1,1,1,10),cone:new THREE.ConeGeometry(1,1,8)};
- this.static=new THREE.Group();this.scene.add(this.static);this.makeGround();if(this.city==='milano'){this.makeDuomo();this.makeSurroundings();this.makeMonument();this.makeLamps();this.makeCityDetails();}this.batchStatic();this.makeActors();this.makeStage();this.makeRain();this.makeSnow();this.makeClouds();this.makeMoonAndLights();
+ this.static=new THREE.Group();this.scene.add(this.static);this.makeGround();if(this.city==='milano'){this.loadAuthenticDuomo();this.makeSurroundings();this.makeMonument();this.makeLamps();this.makeCityDetails();}this.batchStatic();this.makeActors();this.makeStage();this.makeRain();this.makeSnow();this.makeClouds();this.makeMoonAndLights();
  this.player=this.person('#47685e',true);this.player.position.set(this.city==='palermo'?73:-46,0,this.city==='palermo'?0:16);this.player.rotation.y=-Math.PI/2;this.scene.add(this.player);
  this.hotspots=this.city==='palermo'?[]:[{x:62,z:0,title:'Duomo di Milano',type:'duomo',radius:11},{x:0,z:-48,title:'Galleria Vittorio Emanuele II',type:'galleria',radius:11},{x:-18,z:0,title:'Monumento a Vittorio Emanuele II',type:'monumento',radius:10}];
  this.hotspots.forEach(h=>{let ring=new THREE.Mesh(new THREE.RingGeometry(.8,1,24),new THREE.MeshBasicMaterial({color:'#c5ddaf',transparent:true,opacity:.75,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.set(h.x,.06,h.z);this.scene.add(ring);h.marker=ring;});
@@ -27,6 +28,7 @@ export class PiazzaEngine {
  for(let z of [-49,49]){this.box('#7d7e72',-7,.03,z,143,.06,1);this.box('#d4c9b5',-7,.06,z+Math.sign(z),143,.12,1.2);}
  this.box('#a39e91',67,.17,0,7,.35,62);this.box('#c6bbae',69,.4,0,5,.4,59);this.box('#d1c7b8',71,.64,0,3,.3,57);
  }
+ async loadAuthenticDuomo(){try{const model=await loadDuomoModel();if(this.disposed){model.geometry.dispose();model.material.dispose();return;}this.scene.add(model);this.authenticDuomo=model;console.info('[Bel Paese] Scansione Duomo reale caricata');}catch(error){console.warn('[Bel Paese] Duomo reale non disponibile:',error.message);}}
  makeDuomo(){const g=new THREE.Group();g.position.set(73,0,0);g.rotation.y=Math.PI/2;this.static.add(g);const stone='#d6c8b9',pale='#e7daca',trim='#eee2d2',shade='#b5aa9d';
  this.box(stone,0,16,42,35,32,85,g).castShadow=true;this.box('#b5afa5',0,34,44,22,7,77,g);this.triangle(23,12,80,shade,g,0,36,4);
  for(let side of [-1,1]){this.box(stone,side*24,10,38,13,20,75,g);this.box('#bcb6aa',side*24,21,38,14,2,75,g);for(let z=8;z<80;z+=10){this.box(trim,side*30,13,z,1.4,26,1.7,g);this.mesh('cone',pale,[side*30,28,z],[1,6,1],g);this.arch(3.4,9,'#5c6664',g,side*23,8,z);}}
