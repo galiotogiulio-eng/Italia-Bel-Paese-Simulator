@@ -1,10 +1,10 @@
 {
-  "project": "ITALIA VIVA",
+  "project": "ITALIA BEL PAESE SIMULATOR",
   "version": "0.1.0",
   "source_commit": "6db8c8d3ef17b462e02b54f265a759fede9e432d",
   "source_file_count": 19,
   "export_date": "2026-10-29",
-  "published_site": "https://italia-viva-v01.indigocrane15.chatgpt.site",
+  "published_site": "https://italia-bel-paese-simulator-v01.indigocrane15.chatgpt.site",
   "source_sha256": {
     ".openai/hosting.json": "e3ade11e5ee2c9a21d439b49107642637f932d8e95065c0657fb04b5b3281323",
     "README.md": "f3438bce82df58b8871374f40ed454f7c23667943116e7c47147fae6d031e0ae",
