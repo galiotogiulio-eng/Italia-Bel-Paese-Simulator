@@ -18,8 +18,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install OSM tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq osmium-tool
+          python -m pip install --quiet osmium
+      - name: Download open regional extracts and clip city centres
+        run: |
+          mkdir -p data-source
+          curl -fLsS --retry 3 https://download.geofabrik.de/europe/italy/nord-ovest-latest.osm.pbf -o data-source/nord-ovest.osm.pbf
+          curl -fLsS --retry 3 https://download.geofabrik.de/europe/italy/isole-latest.osm.pbf -o data-source/isole.osm.pbf
+          osmium extract -b 9.16,45.44,9.23,45.49 data-source/nord-ovest.osm.pbf -o data-source/milano.osm.pbf -s complete_ways --overwrite
+          osmium extract -b 13.33,38.09,13.39,38.14 data-source/isole.osm.pbf -o data-source/palermo.osm.pbf -s complete_ways --overwrite
       - name: Generate real geographic city files
-        run: node tools/build-city-tiles.mjs
+        run: python tools/build-city-tiles.py
       - name: Verify data files before committing
         run: |
           node -e "const fs=require('fs');for(const city of ['milano','palermo']) {const dir='dist/assets/cities/'+city+'/tiles';const files=fs.readdirSync(dir);if(files.length!==16)process.exit(1);let total=0;for(const f of files)total+=JSON.parse(fs.readFileSync(dir+'/'+f)).buildings.length;console.log(city,files.length,total);if(!total)process.exit(1)}"
