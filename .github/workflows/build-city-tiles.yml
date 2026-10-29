@@ -1,6 +1,10 @@
 name: Build real Milano and Palermo city tiles
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-city-tiles.yml'
 jobs:
   build-city-data:
     runs-on: ubuntu-latest
