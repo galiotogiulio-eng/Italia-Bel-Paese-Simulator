@@ -1,0 +1,27 @@
+name: Build real Milano and Palermo city tiles
+on:
+  workflow_dispatch:
+jobs:
+  build-city-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate real geographic city files
+        run: node tools/build-city-tiles.mjs
+      - name: Verify data files before committing
+        run: |
+          node -e "const fs=require('fs');for(const city of ['milano','palermo']) {const dir='dist/assets/cities/'+city+'/tiles';const files=fs.readdirSync(dir);if(files.length!==16)process.exit(1);let total=0;for(const f of files)total+=JSON.parse(fs.readFileSync(dir+'/'+f)).buildings.length;console.log(city,files.length,total);if(!total)process.exit(1)}"
+      - name: Commit real city tiles to main
+        run: |
+          git config user.name "ibps-city-data-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist/assets/cities/
+          if git diff --cached --quiet; then echo "No data changes"; else git commit -m "Update real static geographic data for Milano and Palermo"; git push; fi
