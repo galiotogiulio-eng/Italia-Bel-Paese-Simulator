@@ -1,0 +1,22 @@
+name: Audit photographs — Milan Palermo Rome
+on:
+  workflow_dispatch:
+jobs:
+  photograph-coverage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Query the same public photo APIs for all three cities
+        run: node tools/photo-coverage-audit.mjs
+      - name: Save machine-readable audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: italian-city-photo-coverage
+          path: audit-results/photo-coverage.json
+          if-no-files-found: error
