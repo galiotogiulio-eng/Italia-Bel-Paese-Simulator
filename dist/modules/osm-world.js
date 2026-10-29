@@ -40,7 +40,7 @@ export async function loadMilanOsm({signal}={}){
  }finally{clearTimeout(timer);}
 }
 export function buildOsmMeshes(THREE,data,{maxBuildings=350,maxRoads=300}={}){
- const group=new THREE.Group();group.name='OpenStreetMap · Milano centro';
+ const group=new THREE.Group();group.name='OpenStreetMap · geometria verificata';
  const palette=['#c9b59c','#d8c8ad','#e6d8c2','#b5b0a3','#dfc9ad'];
  const mats=palette.map(color=>new THREE.MeshStandardMaterial({color,roughness:.88}));
  const roadMat=new THREE.MeshStandardMaterial({color:'#99968b',roughness:1});
@@ -87,6 +87,8 @@ export async function loadMilanTile(tx,tz,{signal,city='milano'}={}){
  const key='ibps-osm-tile-v4-'+city+'-'+tx+'-'+tz;
  const local=await fetch('assets/cities/'+city+'/tiles/'+tx+'_'+tz+'.json',{signal}).catch(()=>null);
  if(local?.ok){const data=await local.json();return {buildings:data.buildings||[],roads:data.roads||[],shops:data.shops||[]};}
+ // Static tiles are the authoritative dataset: do not launch unbounded public Overpass requests.
+ throw new Error('Tile statico non pubblicato: '+city+'/'+tx+'_'+tz);
  try{const value=sessionStorage.getItem(key);if(value){const parsed=JSON.parse(value);if(Date.now()-parsed.at<7*86400000)return parsed.data;}}catch{}
  const [a,b,c,d]=tileBounds(tx,tz,city);
  const q=`[out:json][timeout:20];(way[building](${a},${b},${c},${d});way[highway](${a},${b},${c},${d});nwr[shop][name](${a},${b},${c},${d});nwr[amenity~\"^(restaurant|cafe|bar|pharmacy)$\"][name](${a},${b},${c},${d}););out center geom;`;
