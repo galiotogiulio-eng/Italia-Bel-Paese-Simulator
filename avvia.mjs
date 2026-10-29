@@ -19,4 +19,4 @@ const server=http.createServer(async(req,res)=>{
  }catch(error){res.writeHead(error instanceof URIError?400:404);res.end('File non disponibile');}
 });
 server.on('error',error=>{console.error('Impossibile avviare il server:',error.message);process.exitCode=1;});
-server.listen(8080,'127.0.0.1',()=>console.log('ITALIA VIVA V0.1 — apri http://127.0.0.1:8080/ nel browser. Ctrl+C per chiudere.'));
+server.listen(8080,'127.0.0.1',()=>console.log('ITALIA BEL PAESE SIMULATOR V0.1 — apri http://127.0.0.1:8080/ nel browser. Ctrl+C per chiudere.'));
