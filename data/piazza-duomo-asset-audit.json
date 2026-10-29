@@ -1,0 +1,78 @@
+{
+  "project": "Italia Bel Paese Simulator",
+  "target": "Piazza Duomo Milano",
+  "stage": "asset-audit",
+  "authenticityPolicy": "No claimed photorealism until model, textures, provenance, attribution and permissions are verified.",
+  "assets": [
+    {
+      "id": "duomo",
+      "name": "Duomo di Milano",
+      "priority": 1,
+      "candidate": "https://sketchfab.com/3d-models/milan-cathedral-1bcbcd5885f74d1990ddb6cd3edce4e1",
+      "claimedLicense": "CC BY",
+      "claimedTriangles": 312000,
+      "verifiedForRedistribution": false,
+      "modelDownloaded": false,
+      "integrated": false,
+      "issues": [
+        "Verify that all component textures and underlying scans are original or appropriately licensed",
+        "Check visual fidelity and UV textures",
+        "Check web performance and asset conversion"
+      ]
+    },
+    {
+      "id": "galleria",
+      "name": "Galleria Vittorio Emanuele II",
+      "priority": 2,
+      "candidate": "https://3dwarehouse.sketchup.com/model/706fbfed32268ae6a57ce51ea8a0c91/Galleria-Vittorio-Emanuele-II-Milano",
+      "claimedLicense": "Not established",
+      "verifiedForRedistribution": false,
+      "modelDownloaded": false,
+      "integrated": false,
+      "issues": [
+        "Establish rights for redistribution and adaptation",
+        "Inspect building quality and facade textures"
+      ]
+    },
+    {
+      "id": "palazzo-reale",
+      "name": "Palazzo Reale",
+      "priority": 3,
+      "candidate": null,
+      "verifiedForRedistribution": false,
+      "modelDownloaded": false,
+      "integrated": false
+    },
+    {
+      "id": "arengario",
+      "name": "Arengario e Museo del Novecento",
+      "priority": 4,
+      "candidate": null,
+      "verifiedForRedistribution": false,
+      "modelDownloaded": false,
+      "integrated": false
+    },
+    {
+      "id": "statue",
+      "name": "Monumento a Vittorio Emanuele II",
+      "priority": 5,
+      "candidate": null,
+      "verifiedForRedistribution": false,
+      "modelDownloaded": false,
+      "integrated": false
+    },
+    {
+      "id": "square",
+      "name": "Pavimentazione e perimetro di Piazza Duomo",
+      "priority": 6,
+      "candidate": null,
+      "verifiedForRedistribution": false,
+      "modelDownloaded": false,
+      "integrated": false
+    }
+  ],
+  "gate": {
+    "readyForPhotorealisticRelease": false,
+    "reason": "No complete, legally cleared and technically validated Piazza Duomo 3D asset collection."
+  }
+}
