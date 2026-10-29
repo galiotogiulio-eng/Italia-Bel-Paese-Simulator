@@ -1,0 +1,66 @@
+name: Deploy Italia Bel Paese Simulator
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dist/**'
+      - 'package.json'
+      - 'wrangler.jsonc'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ibps-production-deploy
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check game and source structure
+        run: |
+          test -f dist/index.html
+          test -f dist/modules/app.js
+          npm run check
+      - name: Ensure deployment secrets are available
+        id: auth
+        env:
+          CF_API_TOKEN: ${{ secrets.IBPS_CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.IBPS_CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$CF_API_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Deployment not configured yet. Add IBPS_CLOUDFLARE_API_TOKEN and IBPS_CLOUDFLARE_ACCOUNT_ID as repository Actions secrets."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Mark release
+        if: steps.auth.outputs.ready == 'true'
+        run: |
+          printf '{"commit":"%s","builtAt":"%s"}\n' "$GITHUB_SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > dist/release.json
+      - name: Publish to dedicated Cloudflare Worker
+        if: steps.auth.outputs.ready == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.IBPS_CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.IBPS_CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
+      - name: Verify actual public release
+        if: steps.auth.outputs.ready == 'true'
+        env:
+          URL: https://italia-bel-paese-simulator.dbcit.workers.dev/release.json
+        run: |
+          for attempt in 1 2 3 4 5 6 7 8; do
+            if curl -fsS -H 'Cache-Control: no-cache' "$URL?verify=$GITHUB_SHA" -o /tmp/ibps-release.json && node -e 'const r=require("/tmp/ibps-release.json");process.exit(r.commit===process.env.GITHUB_SHA?0:1)'; then
+              echo "LIVE_RELEASE_VERIFIED=$GITHUB_SHA"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Live site does not serve the just-deployed commit."
+          exit 1
