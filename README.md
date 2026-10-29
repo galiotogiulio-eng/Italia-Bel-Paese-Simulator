@@ -1,4 +1,4 @@
-# ITALIA VIVA — V0.1
+# ITALIA BEL PAESE SIMULATOR — V0.1
 Static, editable browser game. Serve `dist/` over HTTP; Three.js is bundled locally (MIT).
 
 Modules:
