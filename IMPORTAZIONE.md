@@ -1,7 +1,11 @@
-# Importazione del prototipo V0.1
+# Importazione completata
 
-Questo repository contiene la configurazione iniziale, ma **i file della directory `dist/` non sono ancora stati caricati**.
+I sorgenti di Italia Viva V0.1 sono stati estratti nella cartella `dist/` del repository. La versione ZIP originale è stata eliminata.
 
-L'archivio sorgente originale proviene dall'esportazione di Italia Viva V0.1 da ChatGPT Sites. La directory `dist/` va preservata integralmente: contiene `index.html`, moduli JavaScript, modelli/dati geografici e una copia con licenza di Three.js.
+## Avvio e distribuzione
+- Il gioco parte da `dist/index.html`.
+- Cloudflare Workers usa `wrangler.jsonc` con `assets.directory: ./dist`.
+- Il comando di deploy è `npx wrangler deploy` senza estrazione ZIP.
+- I test sono nella cartella `tests/`.
 
-Per pubblicare su Cloudflare, prima importare tutti i file sorgenti, poi collegare il repository a Workers Static Assets. Non inserire API key o segreti nel repository pubblico.
+Non inserire credenziali o chiavi API nel repository pubblico.
