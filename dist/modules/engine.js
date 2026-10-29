@@ -93,7 +93,7 @@ export class PiazzaEngine {
     // Keep hand-built central Piazza and landmark demos while real geography grows around it.
     const buildings=data.buildings.filter(b=>!b.points.some(p=>p[0]>-105&&p[0]<118&&p[1]>-83&&p[1]<85));
     const roads=data.roads.filter(r=>!r.points.every(p=>p[0]>-105&&p[0]<118&&p[1]>-83&&p[1]<85));
-    const group=buildOsmMeshes(THREE,{buildings,roads},{maxBuildings:650,maxRoads:450});
+    if(!buildings.length&&!roads.length)throw new Error('Riquadro geografico vuoto');const group=buildOsmMeshes(THREE,{buildings,roads},{maxBuildings:650,maxRoads:450});
     const oldTile=this.cityTiles.get(key);if(oldTile?.group){this.scene.remove(oldTile.group);const mats=new Set();oldTile.group.traverse(o=>{if(o.isMesh){o.geometry.dispose();mats.add(o.material);}});for(const mat of mats)mat.dispose();}this.scene.add(group);this.cityTiles.set(key,{state:'ready',group,approximate:false});
     console.info('[Bel Paese] Milano OSM',key,buildings.length,'edifici',roads.length,'strade');
    }
