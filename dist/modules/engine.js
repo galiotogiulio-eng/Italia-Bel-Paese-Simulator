@@ -5,17 +5,17 @@ import {milanHour} from './weather.js';
 import {buildOsmMeshes,loadMilanTile,tileIdFor,MILANO_CENTRO} from './osm-world.js';
 const clamp=THREE.MathUtils.clamp;
 export class PiazzaEngine {
- constructor(canvas,{onNear,onInteract,onEvent}={}){
+ constructor(canvas,{onNear,onInteract,onEvent,city='milano'}={}){this.city=city;
  this.canvas=canvas;this.onNear=onNear;this.onInteract=onInteract;this.onEvent=onEvent;this.keys={};this.active=false;this.cameraTurn=0;this.moveHeading=0;this.yaw=Math.PI/2;this.pitch=.04;this.distance=11;this.manualWeather='auto';this.weather={mode:'sun'};this.clock=new THREE.Clock();this.npcs=[];this.birds=[];this.colliders=[];this.hotspots=[];this.frameCount=0;this.elapsed=0;
  try{this.renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});}catch(error){this.renderer=new SoftwareRenderer(canvas);this.softwareFallback=true;}this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));this.renderer.shadowMap.enabled=!this.softwareFallback;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.25;
  this.scene=new THREE.Scene();this.camera=new THREE.PerspectiveCamera(58,1,.2,900);this.scene.background=new THREE.Color('#a9c7ce');this.scene.fog=new THREE.Fog('#a9c7ce',170,380);
  this.hemisphere=new THREE.HemisphereLight('#d8e8ef','#8b8872',2.2);this.scene.add(this.hemisphere);this.sun=new THREE.DirectionalLight('#ffe4be',3.1);this.sun.position.set(-70,100,70);this.sun.castShadow=true;this.sun.shadow.mapSize.set(2048,2048);Object.assign(this.sun.shadow.camera,{left:-110,right:110,top:100,bottom:-100,near:1,far:300});this.sun.shadow.bias=-.001;this.scene.add(this.sun);
  this.materials={};this.geometries={box:new THREE.BoxGeometry(1,1,1),sphere:new THREE.SphereGeometry(1,10,7),cyl:new THREE.CylinderGeometry(1,1,1,10),cone:new THREE.ConeGeometry(1,1,8)};
- this.static=new THREE.Group();this.scene.add(this.static);this.makeGround();this.makeDuomo();this.makeSurroundings();this.makeMonument();this.makeLamps();this.makeCityDetails();this.batchStatic();this.makeActors();this.makeStage();this.makeRain();this.makeClouds();
- this.player=this.person('#47685e',true);this.player.position.set(-46,0,16);this.player.rotation.y=-Math.PI/2;this.scene.add(this.player);
- this.hotspots=[{x:62,z:0,title:'Duomo di Milano',type:'duomo',radius:11},{x:0,z:-48,title:'Galleria Vittorio Emanuele II',type:'galleria',radius:11},{x:-18,z:0,title:'Monumento a Vittorio Emanuele II',type:'monumento',radius:10}];
+ this.static=new THREE.Group();this.scene.add(this.static);this.makeGround();if(this.city==='milano'){this.makeDuomo();this.makeSurroundings();this.makeMonument();this.makeLamps();this.makeCityDetails();}this.batchStatic();this.makeActors();this.makeStage();this.makeRain();this.makeClouds();
+ this.player=this.person('#47685e',true);this.player.position.set(this.city==='palermo'?73:-46,0,this.city==='palermo'?0:16);this.player.rotation.y=-Math.PI/2;this.scene.add(this.player);
+ this.hotspots=this.city==='palermo'?[]:[{x:62,z:0,title:'Duomo di Milano',type:'duomo',radius:11},{x:0,z:-48,title:'Galleria Vittorio Emanuele II',type:'galleria',radius:11},{x:-18,z:0,title:'Monumento a Vittorio Emanuele II',type:'monumento',radius:10}];
  this.hotspots.forEach(h=>{let ring=new THREE.Mesh(new THREE.RingGeometry(.8,1,24),new THREE.MeshBasicMaterial({color:'#c5ddaf',transparent:true,opacity:.75,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.set(h.x,.06,h.z);this.scene.add(ring);h.marker=ring;});
- this.loadGeographicCity();this.bind();this.resize();this.camera.position.set(-55,8,18);this.frame=this.frame.bind(this);requestAnimationFrame(this.frame);
+ this.loadGeographicCity();this.bind();this.resize();this.camera.position.set(this.city==='palermo'?62:-55,8,18);this.frame=this.frame.bind(this);requestAnimationFrame(this.frame);
  }
  mat(color,extra={}){const key=color+JSON.stringify(extra);return this.materials[key]??=(new THREE.MeshStandardMaterial({color,roughness:.86,...extra}));}
  mesh(type,color,pos,scale,parent=this.static,extra={}){const m=new THREE.Mesh(this.geometries[type],this.mat(color,extra));m.position.set(...pos);m.scale.set(...scale);m.receiveShadow=true;parent.add(m);return m;}
@@ -85,11 +85,11 @@ export class PiazzaEngine {
   if(!this.cityTiles.has(key)){this.pumpCityTiles();return;}
   this.tilesInFlight=true;
   try{
-   const data=await loadMilanTile(tx,tz);
+   const data=await loadMilanTile(tx,tz,{city:this.city});
    if(this.cityTiles.has(key)){
     // Keep hand-built central Piazza and landmark demos while real geography grows around it.
-    const buildings=data.buildings.filter(b=>!b.points.some(p=>p[0]>-105&&p[0]<118&&p[1]>-83&&p[1]<85));
-    const roads=data.roads.filter(r=>!r.points.every(p=>p[0]>-105&&p[0]<118&&p[1]>-83&&p[1]<85));
+    const buildings=this.city==='milano'?data.buildings.filter(b=>!b.points.some(p=>p[0]>-105&&p[0]<118&&p[1]>-83&&p[1]<85)):data.buildings;
+    const roads=this.city==='milano'?data.roads.filter(r=>!r.points.every(p=>p[0]>-105&&p[0]<118&&p[1]>-83&&p[1]<85)):data.roads;
     if(!buildings.length&&!roads.length)throw new Error('Riquadro geografico vuoto');const group=buildOsmMeshes(THREE,{buildings,roads},{maxBuildings:650,maxRoads:450});
     const oldTile=this.cityTiles.get(key);if(oldTile?.group){this.scene.remove(oldTile.group);const mats=new Set();oldTile.group.traverse(o=>{if(o.isMesh){o.geometry.dispose();mats.add(o.material);}});for(const mat of mats)mat.dispose();}this.scene.add(group);this.cityTiles.set(key,{state:'ready',group,approximate:false});
     console.info('[Bel Paese] Milano OSM',key,buildings.length,'edifici',roads.length,'strade');
