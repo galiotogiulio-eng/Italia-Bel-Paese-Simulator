@@ -96,3 +96,28 @@ export async function loadMilanTile(tx,tz,{signal}={}){
   return data;
  }finally{clearTimeout(timer);}
 }
+
+/** Immediate offline placeholder around Milano. This is procedural scenery,
+ * deliberately NOT represented as genuine city geometry.
+ * It is replaced as soon as geographic data is available.
+ */
+export function makeProceduralTile(tx,tz){
+ const size=MILANO_CENTRO.tileSize,ox=tx*size+73,oz=tz*size;
+ const buildings=[],roads=[];
+ let seed=((tx+101)*73856093 ^ (tz+101)*19349663)>>>0;
+ const rand=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+ for(let row=0;row<4;row++)for(let col=0;col<4;col++){
+  const x=ox+col*110+17,z=oz+row*110+17;
+  const w=60+rand()*22,d=58+rand()*20;
+  const corners=[[x,z],[x+w,z],[x+w,z+d],[x,z+d],[x,z]];
+  const points=corners;
+  if(points.some(p=>p[0]>-112&&p[0]<122&&p[1]>-90&&p[1]<90))continue;
+  buildings.push({id:1000+row*4+col,points,height:12+Math.floor(rand()*6)*3});
+ }
+ for(let i=0;i<5;i++){
+  const shift=i*110+8;
+  roads.push({id:500+i,kind:'residential',points:[[ox+shift,oz],[ox+shift,oz+size]]});
+  roads.push({id:510+i,kind:'residential',points:[[ox,oz+shift],[ox+size,oz+shift]]});
+ }
+ return {buildings,roads,approximate:true};
+}
