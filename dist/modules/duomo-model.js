@@ -2,10 +2,13 @@ import * as THREE from '../vendor/three.module.js';
 
 // Minimal GLB reader tailored to freely licensed scanned landmark meshes.
 // No third-party CDN and no fabricated facade fallback.
-export async function loadDuomoModel(url='assets/landmarks/duomo-milano-web.glb'){
+export async function loadDuomoModel(url='assets/landmarks/duomo-milano-web.glb.gz'){
  const response=await fetch(url);
  if(!response.ok)throw new Error('Modello reale non pubblicato: HTTP '+response.status);
- const bytes=await response.arrayBuffer(),dv=new DataView(bytes);
+ const compressed=await response.arrayBuffer();
+ if(typeof DecompressionStream!=='function')throw new Error('Questo browser non supporta DecompressionStream gzip');
+ const stream=new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip'));
+ const bytes=await new Response(stream).arrayBuffer(),dv=new DataView(bytes);
  if(dv.getUint32(0,true)!==0x46546c67||dv.getUint32(4,true)!==2)throw new Error('GLB non valido');
  const jsonLength=dv.getUint32(12,true),json=JSON.parse(new TextDecoder().decode(new Uint8Array(bytes,20,jsonLength)));
  const binChunk=20+jsonLength,binStart=binChunk+8;
